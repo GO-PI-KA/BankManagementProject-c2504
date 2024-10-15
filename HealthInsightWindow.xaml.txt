@@ -1,0 +1,279 @@
+HealthInsightWindow.xaml
+---------------------------------------
+<Window x:Class="SamplePHT.HealthInsightWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SamplePHT"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        
+        mc:Ignorable="d"
+        Title="HealthInsightWindow" Height="450" Width="800">
+    <Grid>
+        <Canvas Name="InsightsCanvas">
+            <!-- Daily Health Trends Plot -->
+            <oxy:PlotView Name="DailyHealthTrendsPlot" Width="277" Height="176"
+                          Canvas.Left="20" Canvas.Top="20" />
+            <!-- Weekly Health Trends Plot -->
+            <oxy:PlotView Name="WeeklyHealthTrendsPlot" Width="257" Height="174"
+                          Canvas.Left="20" Canvas.Top="250" />
+            <!-- Monthly Health Trends Plot -->
+            <oxy:PlotView Name="MonthlyHealthTrendsPlot" Width="280" Height="176"
+                          Canvas.Left="350" Canvas.Top="250" HorizontalAlignment="Left" VerticalAlignment="Top" />
+
+            <!-- Suggestions and Alerts -->
+            <TextBlock Text="Personalized Suggestions:" FontWeight="Bold" Canvas.Left="350" Canvas.Top="20"/>
+            <TextBlock Name="SuggestionsTextBlock" TextWrapping="Wrap" Canvas.Left="350" Canvas.Top="50" Width="400" />
+
+            <TextBlock Text="Alerts:" FontWeight="Bold" Canvas.Left="350" Canvas.Top="150"/>
+            <TextBlock Name="AlertsTextBlock" TextWrapping="Wrap" Canvas.Left="350" Canvas.Top="180" Width="400" />
+
+            <!-- Health Goals Section -->
+        </Canvas>
+    </Grid>
+</Window>
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+HealthInsightWindow.xaml.cs
+---------------------------------------------
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Series;
+using System;
+using System.Windows;
+
+namespace SamplePHT
+{
+    public partial class HealthInsightWindow : Window
+    {
+        public HealthInsightWindow()
+        {
+            InitializeComponent();
+            LoadHealthData();
+        }
+
+        private void LoadHealthData()
+        {
+            // Example data for the plots
+            LoadDailyHealthTrends();
+            LoadWeeklyHealthTrends();
+            LoadMonthlyHealthTrends();
+
+            // Example personalized suggestions and alerts
+            SuggestionsTextBlock.Text = "Increase your exercise to 30 minutes daily.";
+            AlertsTextBlock.Text = "Warning: Your systolic blood pressure is above the normal range!";
+        }
+
+        private void LoadDailyHealthTrends()
+        {
+            var dailyPlotModel = new PlotModel { Title = "Daily Health Trends" };
+            var lineSeries = new LineSeries { Title = "Heart Rate" };
+
+            // Example data points
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now.AddDays(-6)), 70));
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now.AddDays(-5)), 75));
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now.AddDays(-4)), 72));
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now.AddDays(-3)), 80));
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now.AddDays(-2)), 78));
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now.AddDays(-1)), 76));
+            lineSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(DateTime.Now), 74));
+
+            dailyPlotModel.Series.Add(lineSeries);
+            DailyHealthTrendsPlot.Model = dailyPlotModel;
+        }
+
+        private void LoadWeeklyHealthTrends()
+        {
+            var weeklyPlotModel = new PlotModel { Title = "Weekly Health Trends" };
+            var lineSeries = new LineSeries { Title = "Blood Pressure" };
+
+            // Example data points
+            lineSeries.Points.Add(new DataPoint(0, 120)); // Week 1
+            lineSeries.Points.Add(new DataPoint(1, 125)); // Week 2
+            lineSeries.Points.Add(new DataPoint(2, 118)); // Week 3
+            lineSeries.Points.Add(new DataPoint(3, 130)); // Week 4
+            lineSeries.Points.Add(new DataPoint(4, 128)); // Week 5
+
+            weeklyPlotModel.Series.Add(lineSeries);
+            WeeklyHealthTrendsPlot.Model = weeklyPlotModel;
+        }
+
+        private void LoadMonthlyHealthTrends()
+        {
+            var monthlyPlotModel = new PlotModel { Title = "Monthly Health Trends" };
+            var lineSeries = new LineSeries { Title = "Activity Level" };
+
+            // Example data points
+            lineSeries.Points.Add(new DataPoint(0, 3000)); // Month 1
+            lineSeries.Points.Add(new DataPoint(1, 5000)); // Month 2
+            lineSeries.Points.Add(new DataPoint(2, 4500)); // Month 3
+            lineSeries.Points.Add(new DataPoint(3, 6000)); // Month 4
+            lineSeries.Points.Add(new DataPoint(4, 5500)); // Month 5
+
+            monthlyPlotModel.Series.Add(lineSeries);
+            MonthlyHealthTrendsPlot.Model = monthlyPlotModel;
+        }
+
+        
+    }
+}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+IHealthInsight.cs
+-------------------------
+using SamplePHT;
+using System;
+using System.Collections.Generic;
+
+namespace SamplePHT
+{
+    public interface IHealthInsight
+    {
+        
+        void GenerateInsights(List<HealthMetric> healthMetrics);
+
+        // Method to retrieve personalized suggestions
+        List<string> GetSuggestions();
+
+        // Method to retrieve alerts for abnormal metrics
+        List<string> GetAlerts();
+
+        List<HealthInsight> GetInsightsByUserId(int userId);
+
+
+
+    }
+}
+----------------------------------------------------------------------------------------------------------------------------------
+EFHealthInsightRepo.cs
+----------------------------------
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+
+namespace SamplePHT
+{
+    public class EFHealthInsightRepo : IHealthInsight
+    {
+        private readonly SamplePHTEntities _context;
+
+        public EFHealthInsightRepo(SamplePHTEntities context)
+        {
+            _context = context;
+        }
+
+        // Method to generate insights based on health metrics
+        public void GenerateInsights(List<HealthMetric> healthMetrics)
+        {
+            if (healthMetrics == null || !healthMetrics.Any())
+                throw new ArgumentNullException(nameof(healthMetrics));
+
+            foreach (var metric in healthMetrics)
+            {
+                var insight = new HealthInsight
+                {
+                    UserID = metric.UserID,
+                    InsightType = "Health Insight",
+                    InsightDetails = "Take rest",
+                    GeneratedAt = DateTime.Now
+                };
+
+                _context.HealthInsights.Add(insight);
+            }
+
+            _context.SaveChanges();
+        }
+
+        // Method to retrieve personalized suggestions
+        public List<string> GetSuggestions()
+        {
+            // Example suggestions, ideally these would be generated based on user metrics
+            return new List<string>
+            {
+                "Increase your daily water intake.",
+                "Aim for at least 30 minutes of exercise each day.",
+                "Consider a balanced diet with more fruits and vegetables."
+            };
+        }
+
+        // Method to retrieve alerts for abnormal metrics
+        public List<string> GetAlerts()
+        {
+            var alerts = new List<string>();
+            var abnormalMetrics = _context.HealthMetrics
+                .Where(m => m.BloodPressureSystolic > 140 || m.BloodPressureDiastolic > 90)
+                .ToList();
+
+            foreach (var metric in abnormalMetrics)
+            {
+                alerts.Add($"Alert: User {metric.UserID} has abnormal blood pressure readings on {metric.MetricDate}.");
+            }
+
+            return alerts;
+        }
+
+        // Method to get insights by user ID
+        public List<HealthInsight> GetInsightsByUserId(int userId)
+        {
+            return _context.HealthInsights
+                .Where(h => h.UserID == userId)
+                .ToList();
+        }
+
+       
+        
+    }
+}
+------------------------------------------------------------------------------------------
+HealthInsightViewModel.cs
+-----------------------------------------
+using System;
+using System.Collections.Generic;
+
+namespace SamplePHT
+{
+    public class HealthInsightViewModel
+    {
+        private readonly IHealthInsight _healthInsightRepo;
+
+        public int UserID { get; set; }
+        public List<HealthInsight> Insights { get; set; } = new List<HealthInsight>();
+        public List<string> Suggestions { get; set; } = new List<string>();
+        public List<string> Alerts { get; set; } = new List<string>();
+
+        // Constructor
+        public HealthInsightViewModel(int userId, IHealthInsight healthInsightRepo)
+        {
+            UserID = userId;
+            _healthInsightRepo = healthInsightRepo;
+            LoadData();
+        }
+
+        // Method to load insights, suggestions, and alerts
+        private void LoadData()
+        {
+            LoadInsights();
+            LoadSuggestions();
+            LoadAlerts();
+        }
+
+        // Method to load insights from the repository
+        private void LoadInsights()
+        {
+            Insights = _healthInsightRepo.GetInsightsByUserId(UserID);
+        }
+
+        // Method to load suggestions from the repository
+        private void LoadSuggestions()
+        {
+            Suggestions = _healthInsightRepo.GetSuggestions();
+        }
+
+        // Method to load alerts from the repository
+        private void LoadAlerts()
+        {
+            Alerts = _healthInsightRepo.GetAlerts();
+        }
+    }
+}
+---------------------------------------------------------------------------------------------------------------------------------
